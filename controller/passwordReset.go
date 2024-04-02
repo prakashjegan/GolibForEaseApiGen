@@ -1,0 +1,61 @@
+package controller
+
+import (
+	"net/http"
+	"reflect"
+
+	"github.com/gin-gonic/gin"
+
+	"github.com/prakashjegan/golangexercise/database/model"
+	"github.com/prakashjegan/golangexercise/handler"
+	"github.com/prakashjegan/golangexercise/lib/renderer"
+	"github.com/prakashjegan/golangexercise/service"
+)
+
+// PasswordForgot sends secret code for resetting a forgotten password
+func PasswordForgot(c *gin.Context) {
+	email := model.AuthPayload{}
+
+	if err := c.ShouldBindJSON(&email); err != nil {
+		renderer.Render(c, gin.H{"message": err.Error()}, http.StatusBadRequest)
+		return
+	}
+
+	resp, statusCode := handler.PasswordForgot(email)
+
+	renderer.Render(c, resp, statusCode)
+}
+
+// PasswordRecover resets a forgotten password
+func PasswordRecover(c *gin.Context) {
+	payload := model.AuthPayload{}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		renderer.Render(c, gin.H{"message": err.Error()}, http.StatusBadRequest)
+		return
+	}
+
+	resp, statusCode := handler.PasswordRecover(payload)
+
+	if reflect.TypeOf(resp.Message).Kind() == reflect.String {
+		renderer.Render(c, resp, statusCode)
+		return
+	}
+
+	renderer.Render(c, resp.Message, statusCode)
+}
+
+// PasswordUpdate - change password in logged-in state
+func PasswordUpdate(c *gin.Context) {
+	// get claims
+	claims := service.GetClaims(c)
+
+	payload := model.AuthPayload{}
+	if err := c.ShouldBindJSON(&payload); err != nil {
+		renderer.Render(c, gin.H{"message": err.Error()}, http.StatusBadRequest)
+		return
+	}
+
+	resp, statusCode := handler.PasswordUpdate(claims, payload)
+
+	renderer.Render(c, resp, statusCode)
+}
